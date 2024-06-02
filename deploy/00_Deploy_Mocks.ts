@@ -5,53 +5,42 @@ const deployFunction: DeployFunction = async () => {
   const DECIMALS: string = `18`;
   const INITIAL_PRICE: string = `200000000000000000000`;
 
+  /**
+   * @dev Read more at https://docs.chain.link/docs/chainlink-vrf/
+   */
   const BASE_FEE = "100000000000000000";
-  const GAS_PRICE_LINK = "1000000000"; // 0.000000001 LINK per gas
-
-  // Sepolia
-  const VRFCOORDINATOR = "0x8103b0a8a00be2ddc778e6e7eaa21791cd364625";
-  const LINKTOKEN = "0x779877a7b0d9e8603169ddbd7836e478b4624789";
-  const KEYHASH =
-    "0x474e34a077df58807dbe9c96d3c009b23b3c6d0cce433e59bbf5b34f823bc56c";
-  const CALLBACK_GAS_LIMIT = 100000;
-  const NUM_WORDS = 2;
+  const GAS_PRICE_LINK = "1000000000";
 
   const { deploy, log } = deployments;
   const { deployer } = await getNamedAccounts();
   const chainId: number | undefined = network.config.chainId;
 
+  // If we are on a local development network, we need to deploy mocks!
   if (chainId === 31337) {
-    log(`Local network detected! Deploying contracts...with `);
-    const baseURI = process.env.PINATA_BASE_URI;
+    log(`Local network detected! Deploying mocks...`);
 
-    if (!baseURI) {
-      log(`Please set PINATA_BASE_URI in the .env file`);
-      process.exit(1);
-    }
+    const linkToken = await deploy(`LinkToken`, { from: deployer, log: true });
 
-    await deploy(`VRFv2Consumer`, {
-      contract: `VRFv2Consumer`,
+    await deploy(`MockV3Aggregator`, {
+      contract: `MockV3Aggregator`,
       from: deployer,
       log: true,
-      args: [
-        VRFCOORDINATOR,
-        LINKTOKEN,
-        KEYHASH,
-        3,
-        CALLBACK_GAS_LIMIT,
-        NUM_WORDS,
-      ],
-      gasLimit: 6721975,
+      args: [DECIMALS, INITIAL_PRICE],
     });
 
-    await deploy("LovePoem", {
-      contract: "LovePoem",
+    await deploy("VRFCoordinatorV2Mock", {
       from: deployer,
       log: true,
-      args: [baseURI],
+      args: [BASE_FEE, GAS_PRICE_LINK],
     });
 
-    log(`LovePoem Deployed!`);
+    await deploy(`MockOracle`, {
+      from: deployer,
+      log: true,
+      args: [linkToken.address],
+    });
+
+    log(`Mocks Deployed!`);
     log(`----------------------------------------------------`);
     log(
       `You are deploying to a local network, you'll need a local network running to interact`,
@@ -64,3 +53,4 @@ const deployFunction: DeployFunction = async () => {
 };
 
 export default deployFunction;
+deployFunction.tags = [`all`, `mocks`, `main`];
