@@ -7,8 +7,13 @@ LovePoem NFT leverages blockchain technology to tokenize concert tickets as NFTs
 - Verification of the event listed on the platform via Chainlink Functions request to cross check with the event provider
 
 ## Other
-- Explored IPFS storage for on-chain storage of metadata
+- Explored IPFS storage for off-chain storage of metadata. 
 
+## Stack used
+- Solidity
+- Hardhat
+- Typescript
+  
 ```shell
 npx hardhat help
 npx hardhat test
