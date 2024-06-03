@@ -52,15 +52,8 @@ enum RequestPurpose {
         );
         await fundSubscription.wait();
 
-        const currPoemPrice = await ethers.utils.parseEther("1");
         const reqPurpose = RequestPurpose.Mint;
-        const request = await VRFv2ConsumerContract.mintNewPoem(
-          currPoemPrice,
-          reqPurpose,
-          {
-            value: currPoemPrice,
-          },
-        );
+        const request = await VRFv2ConsumerContract.prepRequest(reqPurpose);
 
         const requestReceipt: ContractReceipt = await request.wait();
         const event = requestReceipt.events?.findLast(
