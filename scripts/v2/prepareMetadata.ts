@@ -1,8 +1,8 @@
 import fs from "fs";
 import path from "path";
 import dotenv from "dotenv";
-import { fileURLToPath } from "url";
-import { create } from "@web3-storage/w3up-client";
+import { filesFromPaths } from "files-from-path";
+import { uploadImageToPinata, verifyUploadStatus } from "./setupPinata.ts";
 import {
   AnyLink,
   Client,
@@ -10,12 +10,12 @@ import {
   UnknownLink,
   UploadListSuccess,
 } from "@web3-storage/w3up-client/types";
-import { filesFromPaths } from "files-from-path";
-import { Metadata } from "../../models/common.model";
+import type { Metadata } from "../../models/common.model.ts";
 dotenv.config();
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const dir = path.resolve(__dirname);
+const PINATA_GATEWAY = process.env.PINATA_GATEWAY;
+
 const WEB3_SPACE_KEY = process.env.WEB3_SPACE_KEY || "";
 const WEB3_ACCOUNT = process.env.WEB3_ACCOUNT as `${string}@${string}`;
 
@@ -26,6 +26,7 @@ async function getFilesFromPath(path: string) {
 }
 
 /**
+ * @deprecated
  * Uploads images to IPFS using the provided client.
  *
  * @param {FileLike[]} images - Array of images to upload
@@ -35,17 +36,20 @@ async function uploadToIpfs(
   client: Client,
   images: FileLike[],
 ): Promise<AnyLink> {
-  let directoryCid: UnknownLink;
+  let directoryCid: UnknownLink | undefined = undefined;
   try {
     directoryCid = await client.uploadDirectory(images);
   } catch (error) {
-    console.error("Error uploading images: ", error.message);
+    console.error("Error uploading images: ", error);
   }
 
-  return directoryCid;
+  return directoryCid as AnyLink;
 }
 
 /**
+ * @deprecated web3-storage/w3up-client is esm-only module, which has compatibility issues with running
+ * hardhat(only commonjs supported) & typescript combined
+ *
  * Verifies if an image with the given CID has been successfully uploaded to IPFS using the provided js client.
  *
  * @param {Client} client - The js client instance to interact with the w3up platform
@@ -62,7 +66,7 @@ async function verifyImageOnIpfs(
   try {
     uploadedList = await client.capability.upload.list();
   } catch (error) {
-    console.error("Error verifying image on IPFS: ", error.message);
+    console.error("Error verifying image on IPFS: ", error);
   }
 
   if (uploadedList?.size) {
@@ -73,17 +77,22 @@ async function verifyImageOnIpfs(
 }
 
 /**
+ * @deprecated web3-storage/w3up-client is esm-only module, which has compatibility issues with running
+ * hardhat(only commonjs supported) & typescript combined
+ *
  * Sets up the client by creating a new client, logging in with the web3 account,
  * and setting the current space to the specified Space DID {WEB3_SPACE_KEY}.
  *
  * @return {Promise<Client>} The client that has been set up locally with the web3 storage account.
  */
 async function setUpClient(): Promise<Client> {
-  const client = await create();
+  const w3upClient = await import("@web3-storage/w3up-client");
+
+  const client = await w3upClient.create();
   try {
     await client.login(WEB3_ACCOUNT);
   } catch (error) {
-    console.error("Error loging in: ", error.message);
+    console.error("Error loging in: ", error);
   }
 
   try {
@@ -91,7 +100,7 @@ async function setUpClient(): Promise<Client> {
   } catch (error) {
     console.error(
       "Error setting up web3 storage client in local space: ",
-      error.message,
+      error,
     );
   }
 
@@ -111,44 +120,44 @@ async function parseMetadataFile(
   metadataDirPath: string,
   imagesDirPath: string,
 ): Promise<Metadata> {
-  const client = await setUpClient();
   const imagesPath = path.join(imagesDirPath, `${id}.jpeg`);
-  const imageFiles = await getFilesFromPath(imagesPath);
 
   let metadataFile: Buffer = Buffer.from("");
   const metadataFilePath = path.join(metadataDirPath, `${id}`);
   try {
     metadataFile = await fs.promises.readFile(metadataFilePath);
   } catch (error) {
-    console.error(`Error reading file in metadata directory: ${error.message}`);
+    console.error(`Error reading file in metadata directory: ${error}`);
   }
 
-  const metadataJson = JSON.parse(metadataFile.toString());
+  const metadataJson: Metadata = JSON.parse(metadataFile.toString());
 
-  let verified = false;
+  let isVerified: boolean | undefined;
+  let ipfsHash: string | undefined;
+  let prevSavedHash: string | undefined;
   if (metadataJson.image) {
-    const cid: string = metadataJson.image.match(
-      /https:\/\/([a-zA-Z0-9]+)\.ipfs\.w3s\.link/,
-    )?.[1];
+    prevSavedHash = String(
+      metadataJson.image.match(/\/ipfs\/([a-zA-Z0-9]+)\//)?.[1],
+    );
     try {
-      verified = await verifyImageOnIpfs(client, cid);
-      console.log(`Verified image ${id} already uploaded on IPFS: ${verified}`);
+      isVerified = await verifyUploadStatus(prevSavedHash);
+      console.log(
+        `Verified image ${id} already uploaded on IPFS: ${isVerified}`,
+      );
     } catch (error) {
-      console.error(`Error verifying image ${id} on IPFS:`, error.message);
+      console.error(`Error verifying image ${id} on IPFS:`, error);
+    }
+  } else {
+    ipfsHash = await uploadImageToPinata(imagesPath, `${id}.jpeg`);
+    metadataJson.image = `${PINATA_GATEWAY}/ipfs/${ipfsHash}/${id}.jpeg`;
+    const metadataFileBuffer = Buffer.from(JSON.stringify(metadataJson));
+    try {
+      await fs.promises.writeFile(metadataFilePath, metadataFileBuffer);
+    } catch (error) {
+      console.error(`Error writing file in metadata directory: ${error}`);
     }
   }
 
-  if (!verified) {
-    const imageCID = await uploadToIpfs(client, imageFiles);
-    metadataJson.image = `https://${imageCID}.ipfs.w3s.link/`;
-  }
-
-  const metadataFileBuffer = Buffer.from(JSON.stringify(metadataJson));
-  try {
-    await fs.promises.writeFile(metadataFilePath, metadataFileBuffer);
-  } catch (error) {
-    console.error(`Error writing file in metadata directory: ${error.message}`);
-  }
   return metadataJson;
 }
 
@@ -160,14 +169,14 @@ async function parseMetadataFile(
  */
 export async function prepareMetadata(): Promise<Metadata[]> {
   const finalMetadata: Metadata[] = [];
-  const metadataDirPath = path.join(__dirname, "../../", "metadata");
-  const imagesDirPath = path.join(__dirname, "../../", "images");
+  const metadataDirPath = path.join(dir, "../../", "metadata");
+  const imagesDirPath = path.join(dir, "../../", "images");
 
   const metadataFiles = await getFilesFromPath(metadataDirPath);
   for await (const file of metadataFiles) {
     let id = Number(file.name.replace(/^\//, ""));
     try {
-      let metadataObj = await parseMetadataFile(
+      let metadataObj: Metadata | undefined = await parseMetadataFile(
         id,
         metadataDirPath,
         imagesDirPath,
@@ -176,7 +185,7 @@ export async function prepareMetadata(): Promise<Metadata[]> {
       metadataObj["id"] = Number(id);
       finalMetadata.push(metadataObj);
     } catch (error) {
-      console.error(`Error parsing metadata file: ${error.message}`);
+      console.error(`Error parsing metadata file: ${error}`);
     }
   }
   console.log("finalMetadata: ", finalMetadata);
