@@ -2,7 +2,8 @@
   "name": "enchantix",
   "version": "1.0.0",
   "scripts": {
-    "dev": "",
+    "dev": "node --loader ts-node/esm",
+    "dev:deploy": "npx hardhat run scripts/v2/deployTables.ts --network localhost",
     "test": "hardhat test"
   },
   "author": "alicesin615",
@@ -10,10 +11,14 @@
     "@ethersproject/abi": "^5.7.0",
     "@ethersproject/providers": "^5.7.2",
     "@nomicfoundation/hardhat-toolbox": "^2.0.0",
+    "@nomicfoundation/hardhat-verify": "^2.0.8",
     "@nomiclabs/hardhat-ethers": "^2.1.1",
     "@nomiclabs/hardhat-etherscan": "^3.1.8",
-    "ethers": "^5.7.1",
-    "hardhat": "^2.22.3",
+    "@tableland/hardhat": "^0.0.9",
+    "@types/node-fetch": "^2.6.11",
+    "erc721a-upgradeable": "^4.3.0",
+    "ethers": "^5.7.2",
+    "hardhat": "^2.22.5",
     "hardhat-deploy": "^0.12.4",
     "mocha": "^10.4.0",
     "prettier": "^3.2.5",
@@ -24,7 +29,14 @@
     "@chainlink/contracts": "^1.1.1",
     "@chainlink/functions-toolkit": "^0.2.8",
     "@chainlink/token": "^1.1.0",
+    "@openzeppelin/contracts": "^4.7.0",
+    "@pinata/sdk": "^2.1.0",
+    "@tableland/evm": "^6.2.0",
+    "@tableland/sdk": "^7.1.0",
+    "@web3-storage/w3up-client": "^14.1.1",
     "dotenv": "^16.4.5",
-    "lodash": "^4.17.21"
+    "files-from-path": "^1.0.4",
+    "lodash": "^4.17.21",
+    "node-fetch": "^2.6.1"
   }
 }
