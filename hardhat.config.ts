@@ -1,32 +1,42 @@
-import * as dotenv from "dotenv";
-import type { HardhatUserConfig } from "hardhat/types";
+import dotenv from "dotenv";
+import { extendEnvironment } from "hardhat/config";
+import type {
+  HardhatUserConfig,
+  HardhatRuntimeEnvironment,
+} from "hardhat/types";
 import "@nomicfoundation/hardhat-toolbox";
 import "@nomicfoundation/hardhat-chai-matchers";
+import "@nomicfoundation/hardhat-toolbox";
 import "@nomiclabs/hardhat-ethers";
-import "hardhat-deploy";
+import "@tableland/hardhat";
+import "@tableland/evm";
+import "@tableland/sdk";
 
 dotenv.config();
 
 const SEPOLIA_RPC_URL = process.env.SEPOLIA_RPC_URL;
 const PRIVATE_KEY = process.env.PRIVATE_KEY;
 const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY;
+const POLYGONSCAN_API_KEY = process.env.POLYGONSCAN_API_KEY;
+
+const ALCHEMY_POLYGON_AMOY_API_KEY = process.env.ALCHEMY_POLYGON_AMOY_API_KEY;
 
 const config: HardhatUserConfig = {
   solidity: "0.8.22",
   defaultNetwork: "hardhat",
+  localTableland: {
+    silent: false,
+    verbose: false,
+  },
   networks: {
     hardhat: {
       chainId: 31337,
       forking: {
         url: SEPOLIA_RPC_URL !== undefined ? SEPOLIA_RPC_URL : "",
-        // blockNumber: Number(FORKING_BLOCK_NUMBER),
-        enabled: true,
+        enabled: false,
       },
-      saveDeployments: true,
-      tags: ["test", "local"],
+      // tags: ["test", "local"],
       loggingEnabled: true,
-      // accounts: {
-      // },
     },
     localhost: {
       chainId: 31337,
@@ -35,12 +45,26 @@ const config: HardhatUserConfig = {
       url: SEPOLIA_RPC_URL !== undefined ? SEPOLIA_RPC_URL : "",
       accounts: PRIVATE_KEY !== undefined ? [PRIVATE_KEY] : [],
       chainId: 11155111,
-      saveDeployments: true,
+    },
+    "polygon-amoy": {
+      url: `https://polygon-amoy.g.alchemy.com/v2/${ALCHEMY_POLYGON_AMOY_API_KEY}`,
+      accounts: PRIVATE_KEY !== undefined ? [PRIVATE_KEY] : [],
     },
   },
   etherscan: {
-    apiKey: ETHERSCAN_API_KEY,
+    apiKey: POLYGONSCAN_API_KEY,
+    customChains: [
+      {
+        network: "polygon-amoy",
+        chainId: 80002,
+        urls: {
+          apiURL: "https://api-amoy.polygonscan.com/api",
+          browserURL: "https://amoy.polygonscan.com",
+        },
+      },
+    ],
   },
+
   paths: {
     sources: "./contracts",
     tests: "./test",
@@ -56,15 +80,48 @@ const config: HardhatUserConfig = {
     outputFile: "gas-report.txt",
     noColors: true,
   },
-
-  namedAccounts: {
-    deployer: {
-      default: 0, // here this will by default take the first account as deployer,
-    },
-    user: {
-      default: 1,
+  config: {
+    args: {
+      contractAddress: "", // IMPORTANT: Update this with your contract deployment address
+      linkTokenAddress: "0x779877A7B0D9E8603169DdbD7836e478b4624789", // Ethereum Sepolia LINK token
+      oracleAddress: "0x6090149792dAAeE9D1D568c9f9a6F6B46AA29eFD", // Any API node operator address
+      jobId: "ca98366cc7314957b8c012c72f05aeeb",
     },
   },
+
+  typechain: {
+    outDir: "typechain",
+    target: "ethers-v5",
+  },
 };
+
+interface ContractConfig {
+  contractAddress: string;
+  linkTokenAddress: string;
+  oracleAddress: string;
+  jobId: string;
+}
+
+interface ContractNetworkConfig {
+  args: ContractConfig;
+}
+
+declare module "hardhat/types/config.ts" {
+  interface HardhatUserConfig {
+    config: ContractNetworkConfig;
+  }
+}
+
+declare module "hardhat/types/runtime.ts" {
+  interface HardhatRuntimeEnvironment {
+    deployment: ContractConfig;
+  }
+}
+
+extendEnvironment((hre: HardhatRuntimeEnvironment) => {
+  const config = hre.userConfig.config;
+  hre.deployment = config.args;
+  hre.hardhatArguments.verbose = true;
+});
 
 export default config;
