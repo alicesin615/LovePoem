@@ -14,11 +14,10 @@ export async function prepareSqlForTables(
   mainTable: string,
   attributesTable: string,
 ): Promise<Statements> {
-  const metadata = prepareMetadata();
-
   const sqlInsertStatements: Statements = [];
+  const metadata = await prepareMetadata();
 
-  for await (let obj of await metadata) {
+  for (let obj of metadata) {
     const { id, name, description, image, attributes } = obj || {};
     // INSERT statement for a 'main' table that includes some shared data across any NFT: id int, name text, description text, image text
     let mainTableStatement = `INSERT INTO ${mainTable} (id, name, description, image) VALUES (${id}, '${name}', '${description}', '${image}');`;

@@ -1,0 +1,20 @@
+{
+  "id": 0,
+  "name": "Love Poem",
+  "description": "This NFT serves as a ticket to IU Love Poem concert. Enjoy exclusive benefits and memorable experiences.",
+  "image": "https://sapphire-real-tiglon-529.mypinata.cloud/ipfs/QmdUqAfmgFRdrNsSPFhaLVRx9ANqejGUis2fZuHTd84qDc/0.jpeg",
+  "attributes": [
+    {
+      "trait_type": "Section",
+      "value": "CAT1"
+    },
+    {
+      "trait_type": "Row",
+      "value": "1"
+    },
+    {
+      "trait_type": "Seat",
+      "value": "15"
+    }
+  ]
+}

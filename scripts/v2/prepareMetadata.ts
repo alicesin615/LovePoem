@@ -135,6 +135,7 @@ async function parseMetadataFile(
   let isVerified: boolean | undefined;
   let ipfsHash: string | undefined;
   let prevSavedHash: string | undefined;
+
   if (metadataJson.image) {
     prevSavedHash = String(
       metadataJson.image.match(/\/ipfs\/([a-zA-Z0-9]+)\//)?.[1],
