@@ -37,7 +37,15 @@ export async function uploadImageToPinata(
   return IpfsHash;
 }
 
-export async function verifyUploadStatus(hash: string) {
+/**
+ * Verifies the upload status of a file by checking if it has been pinned on Pinata via its hash.
+ *
+ * @param {string} hash - The hash of the file to verify.
+ * @return {Promise<boolean | undefined>} A Promise that resolves to a boolean indicating if the file has been uploaded, or undefined if there was an error.
+ */
+export async function verifyUploadStatus(
+  hash: string,
+): Promise<boolean | undefined> {
   let uploaded: boolean | undefined = undefined;
 
   const filters: PinataPinListFilterOptions = {
