@@ -3,10 +3,7 @@ import { ethers } from "ethers";
 import { networkConfig } from "./helper-hardhat-config";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BigNumber, constants } from "ethers";
-import {
-  LinkTokenInterface,
-  LinkTokenInterface__factory,
-} from "./typechain-types";
+import { LinkTokenInterface, LinkTokenInterface__factory } from "./typechain";
 
 export const autoFundCheck = async (
   contractAddr: string,
