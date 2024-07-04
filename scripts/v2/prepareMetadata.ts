@@ -3,13 +3,6 @@ import path from "path";
 import dotenv from "dotenv";
 import { filesFromPaths } from "files-from-path";
 import { uploadImageToPinata, verifyUploadStatus } from "./setupPinata.ts";
-import {
-  AnyLink,
-  Client,
-  FileLike,
-  UnknownLink,
-  UploadListSuccess,
-} from "@web3-storage/w3up-client/types";
 import type { Metadata } from "../../models/common.model.ts";
 dotenv.config();
 
@@ -32,19 +25,19 @@ async function getFilesFromPath(path: string) {
  * @param {FileLike[]} images - Array of images to upload
  * @return {AnyLink} The CID of the uploaded directory
  */
-async function uploadToIpfs(
-  client: Client,
-  images: FileLike[],
-): Promise<AnyLink> {
-  let directoryCid: UnknownLink | undefined = undefined;
-  try {
-    directoryCid = await client.uploadDirectory(images);
-  } catch (error) {
-    console.error("Error uploading images: ", error);
-  }
+// async function uploadToIpfs(
+//   client: Client,
+//   images: FileLike[],
+// ): Promise<AnyLink> {
+//   let directoryCid: UnknownLink | undefined = undefined;
+//   try {
+//     directoryCid = await client.uploadDirectory(images);
+//   } catch (error) {
+//     console.error("Error uploading images: ", error);
+//   }
 
-  return directoryCid as AnyLink;
-}
+//   return directoryCid as AnyLink;
+// }
 
 /**
  * @deprecated web3-storage/w3up-client is esm-only module, which has compatibility issues with running
@@ -56,25 +49,25 @@ async function uploadToIpfs(
  * @param {string} cid - The CID (Content Identifier) of the image to verify against {UploadListSuccess}.
  * @return {Promise<boolean>} A boolean indicating whether the image has been successfully uploaded or not.
  */
-async function verifyImageOnIpfs(
-  client: Client,
-  cid: string,
-): Promise<boolean> {
-  let verified = false;
-  let uploadedList: UploadListSuccess | undefined = undefined;
+// async function verifyImageOnIpfs(
+//   client: Client,
+//   cid: string,
+// ): Promise<boolean> {
+//   let verified = false;
+//   let uploadedList: UploadListSuccess | undefined = undefined;
 
-  try {
-    uploadedList = await client.capability.upload.list();
-  } catch (error) {
-    console.error("Error verifying image on IPFS: ", error);
-  }
+//   try {
+//     uploadedList = await client.capability.upload.list();
+//   } catch (error) {
+//     console.error("Error verifying image on IPFS: ", error);
+//   }
 
-  if (uploadedList?.size) {
-    verified = uploadedList?.before === cid;
-  }
+//   if (uploadedList?.size) {
+//     verified = uploadedList?.before === cid;
+//   }
 
-  return verified;
-}
+//   return verified;
+// }
 
 /**
  * @deprecated web3-storage/w3up-client is esm-only module, which has compatibility issues with running
@@ -85,27 +78,27 @@ async function verifyImageOnIpfs(
  *
  * @return {Promise<Client>} The client that has been set up locally with the web3 storage account.
  */
-async function setUpClient(): Promise<Client> {
-  const w3upClient = await import("@web3-storage/w3up-client");
+// async function setUpClient(): Promise<Client> {
+//   const w3upClient = await import("@web3-storage/w3up-client");
 
-  const client = await w3upClient.create();
-  try {
-    await client.login(WEB3_ACCOUNT);
-  } catch (error) {
-    console.error("Error loging in: ", error);
-  }
+//   const client = await w3upClient.create();
+//   try {
+//     await client.login(WEB3_ACCOUNT);
+//   } catch (error) {
+//     console.error("Error loging in: ", error);
+//   }
 
-  try {
-    await client.setCurrentSpace(`did:key:${WEB3_SPACE_KEY}`);
-  } catch (error) {
-    console.error(
-      "Error setting up web3 storage client in local space: ",
-      error,
-    );
-  }
+//   try {
+//     await client.setCurrentSpace(`did:key:${WEB3_SPACE_KEY}`);
+//   } catch (error) {
+//     console.error(
+//       "Error setting up web3 storage client in local space: ",
+//       error,
+//     );
+//   }
 
-  return client;
-}
+//   return client;
+// }
 
 /**
  * Parses a metadata file for a given ID, updates the image field with the IPFS CID, and writes the updated metadata file.

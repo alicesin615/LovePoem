@@ -4,7 +4,7 @@
   "scripts": {
     "dev": "node --loader ts-node/esm",
     "dev:deploy": "npx hardhat run scripts/v2/deployTables.ts --network localhost",
-    "test": "hardhat test"
+    "test": "mocha"
   },
   "author": "alicesin615",
   "devDependencies": {
@@ -33,7 +33,6 @@
     "@pinata/sdk": "^2.1.0",
     "@tableland/evm": "^6.2.0",
     "@tableland/sdk": "^7.1.0",
-    "@web3-storage/w3up-client": "^14.1.1",
     "dotenv": "^16.4.5",
     "files-from-path": "^1.0.4",
     "lodash": "^4.17.21",
