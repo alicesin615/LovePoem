@@ -7,10 +7,11 @@ const localTableland = new LocalTableland({ silent: false, verbose: false });
 before(async function () {
   this.timeout(15000);
   await localTableland.start();
-  console.log("started");
+  console.log("Starting local tableland...");
   await localTableland.isReady();
 });
 
 after(async function () {
+  console.log("Shutting down local tableland...");
   await localTableland.shutdown();
 });

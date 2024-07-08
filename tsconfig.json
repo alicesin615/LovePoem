@@ -12,6 +12,12 @@
     "allowJs": true
   },
   "exclude": ["node_modules"],
-  "include": ["scripts/v2/*.ts", "contracts/*.sol", "typechain"],
-  "files": ["./hardhat.config.ts"]
+  "include": [
+    "scripts/v2/*.ts",
+    "contracts/*.sol",
+    "typechain-types",
+    "test/v2/*.spec.ts",
+    "helper-hardhat-config.ts"
+  ],
+  "files": ["hardhat.config.ts"]
 }

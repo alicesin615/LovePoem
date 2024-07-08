@@ -71,9 +71,6 @@ const config: HardhatUserConfig = {
     cache: "./cache",
     artifacts: "./artifacts",
   },
-  mocha: {
-    timeout: 40000,
-  },
   gasReporter: {
     enabled: true,
     currency: "USD",
@@ -90,7 +87,7 @@ const config: HardhatUserConfig = {
   },
 
   typechain: {
-    outDir: "typechain",
+    outDir: "typechain-types",
     target: "ethers-v5",
   },
 };
@@ -121,7 +118,6 @@ declare module "hardhat/types/runtime.ts" {
 extendEnvironment((hre: HardhatRuntimeEnvironment) => {
   const config = hre.userConfig.config;
   hre.deployment = config.args;
-  hre.hardhatArguments.verbose = true;
 });
 
 export default config;
