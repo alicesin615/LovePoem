@@ -9,7 +9,12 @@
     "resolveJsonModule": true,
     "allowImportingTsExtensions": true,
     "noEmit": true,
-    "allowJs": true
+    "allowJs": true,
+    "paths": {
+      "@tableland/sdk/helpers": [
+        "./node_modules/@tableland/sdk/dist/esm/helpers"
+      ]
+    }
   },
   "exclude": ["node_modules"],
   "include": [

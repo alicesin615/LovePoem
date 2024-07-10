@@ -1,5 +1,6 @@
 {
   "require": "hardhat/register",
   "timeout": 40000,
-  "_": ["test/v2/*.spec.ts"]
+  "_": ["test/v2/*.spec.ts"],
+  "extension": ["ts"]
 }
