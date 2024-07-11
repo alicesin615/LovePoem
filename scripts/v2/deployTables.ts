@@ -130,30 +130,29 @@ async function main() {
         );
       }
     }
-
-    // Deploy LovePoemV2 contract with the generated main & attributes table names
-    const LovePoemV2Factory = await hre.ethers.getContractFactory("LovePoemV2");
-    const lovePoemV2 = await LovePoemV2Factory.deploy(
-      tablelandBaseURI,
-      lovePoemMainTableName,
-      lovePoemAttributesTableName,
-    );
-    console.log(`LovePoemV2 Contract deployed to ${lovePoemV2.address}`);
-    await lovePoemV2.deployed();
-
-    const baseURI = await lovePoemV2.getBaseURIString();
-    console.log(`LovePoemV2 is using baseURI: ${baseURI}`);
-
-    const mintLovePoemV2Token = await lovePoemV2.mint();
-    const mintTxn = await mintLovePoemV2Token.wait();
-    const mintReceipient = mintTxn?.events?.[0]?.args?.[1];
-    const tokenId = mintTxn?.events?.[0]?.args?.[2];
-    console.log(
-      `\nLovePoemV2Token minted: tokenId '${tokenId.toNumber()}' to owner '${mintReceipient}'`,
-    );
-    const tokenURI = await lovePoemV2.tokenURI(tokenId);
-    console.log(`'tokenURI' using token '${tokenId}' here:\n${tokenURI}`);
   }
+  // Deploy LovePoemV2 contract with the generated main & attributes table names
+  const LovePoemV2Factory = await hre.ethers.getContractFactory("LovePoemV2");
+  const lovePoemV2 = await LovePoemV2Factory.deploy(
+    tablelandBaseURI,
+    lovePoemMainTableName,
+    lovePoemAttributesTableName,
+  );
+  console.log(`LovePoemV2 Contract deployed to ${lovePoemV2.address}`);
+  await lovePoemV2.deployed();
+
+  const baseURI = await lovePoemV2.getBaseURIString();
+  console.log(`LovePoemV2 is using baseURI: ${baseURI}`);
+
+  const mintLovePoemV2Token = await lovePoemV2.mint();
+  const mintTxn = await mintLovePoemV2Token.wait();
+  const mintReceipient = mintTxn?.events?.[0]?.args?.[1];
+  const tokenId = mintTxn?.events?.[0]?.args?.[2];
+  console.log(
+    `\nLovePoemV2Token minted: tokenId '${tokenId.toNumber()}' to owner '${mintReceipient}'`,
+  );
+  const tokenURI = await lovePoemV2.tokenURI(tokenId);
+  console.log(`'tokenURI' using token '${tokenId}' here:\n${tokenURI}`);
 }
 
 main()
@@ -161,7 +160,6 @@ main()
     process.exit(0);
   })
   .catch((error) => {
-    console.log("Error:", error);
     console.error(error);
     process.exit(1);
   });
