@@ -114,4 +114,21 @@ describe("LovePoemV2 Unit Tests", async function () {
       expect(insertIntoMainResult?.tableId).to.equal("2");
     }
   });
+  it("Should get the initial baseURI of LovePoemV2", async function () {
+    const lovePoemV2BaseURI = await lovePoemV2.getBaseURIString();
+    expect(lovePoemV2BaseURI).to.equal(tablelandBaseURI);
+  });
+  it("Should mint a LovePoemV2 with tokenId", async function () {
+    const mintLovePoemV2Token = await lovePoemV2.mint();
+    const mintTxn = await mintLovePoemV2Token.wait();
+    console.log("LovePoemV2 mint txn event args: ", mintTxn?.events?.[0]?.args);
+    const mintReceipient = mintTxn?.events?.[0]?.args?.[1];
+    const tokenId = mintTxn?.events?.[0]?.args?.[2];
+    console.log(
+      `\nLovePoemV2Token minted: tokenId '${tokenId.toNumber()}' to owner '${mintReceipient}'`,
+    );
+    const tokenURI = await lovePoemV2.tokenURI(tokenId);
+    console.log(`'tokenURI' using token '${tokenId}' here:\n${tokenURI}`);
+    expect(tokenId.toNumber()).to.equal(0);
+  });
 });

@@ -88,8 +88,16 @@ contract LovePoemV2 is ERC721URIStorage, Ownable {
 			)
 		);
 		// Return the baseURI with a query string, which looks up the token id in a row.
-		// `&mode=list` formats into the proper JSON object expected by metadata standards.
-		return string(abi.encodePacked(baseURIString, query, Strings.toString(tokenId), "%20group%20by%20id"));
+		return
+			string(
+				abi.encodePacked(
+					baseURIString,
+					"unwrap=true&extract=true",
+					query,
+					Strings.toString(tokenId),
+					"%20group%20by%20id"
+				)
+			);
 	}
 
 	/**
