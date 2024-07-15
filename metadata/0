@@ -15,6 +15,10 @@
     {
       "trait_type": "Seat",
       "value": "15"
+    },
+    {
+      "trait_type": "Status",
+      "value": "SALE_START"
     }
   ]
 }
