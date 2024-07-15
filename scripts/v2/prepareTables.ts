@@ -1,6 +1,7 @@
+import { WaitableTransactionReceipt } from "@tableland/sdk";
 import { LovePoemV2Database } from "../../models";
 
-export async function createLovePoemTables(
+export async function createTables(
   tablePrefix: string,
   tableSchema: string,
   db: LovePoemV2Database,
@@ -18,4 +19,83 @@ export async function createLovePoemTables(
   }
 
   return tableName;
+}
+
+export async function getJoinedTable(
+  db: LovePoemV2Database,
+  mainTableName: string,
+  attributesTableName: string,
+) {
+  const getTableStmt = `SELECT json_object('id', id, 'name', name, 'description', description, 'image', image, 'attributes', json_group_array(json_object('trait_type', trait_type, 'value', value))) as metadata from ${mainTableName} JOIN ${attributesTableName} ON ${mainTableName}.id = ${attributesTableName}.main_id;`;
+  const { results, meta: getTable } = await db.prepare(getTableStmt).all();
+
+  try {
+    await getTable?.txn?.wait();
+  } catch (error) {
+    throw new Error(`Failed to get joined table: ${error}`);
+  }
+
+  return results;
+}
+export async function selectFromJoinedTable(
+  db: LovePoemV2Database,
+  mainTableName: string,
+  attributesTableName: string,
+  selectStmt: string,
+) {
+  const selectFromTableStmt = `SELECT ${selectStmt} from ${mainTableName} JOIN ${attributesTableName} ON ${mainTableName}.id = ${attributesTableName}.main_id;`;
+  const { results, meta: selectFromTable } = await db
+    .prepare(selectFromTableStmt)
+    .all();
+  try {
+    await selectFromTable?.txn?.wait();
+  } catch (error) {
+    throw new Error(`Failed to select from joined table: ${error}`);
+  }
+  return results;
+}
+
+export async function insertAttributes(
+  db: LovePoemV2Database,
+  attributesTableId: string,
+  attributeTableName: string,
+  trait_type: string,
+  value: string | number,
+) {
+  const insertAttributesStmt = `INSERT INTO ${attributeTableName} (main_id, trait_type, value) VALUES (?, ?, ?)`;
+  const { meta: insertAttributes } = await db
+    .prepare(insertAttributesStmt)
+    .bind(`${attributesTableId}`, `${trait_type}`, `${value}`)
+    .run();
+
+  let insertTxn: WaitableTransactionReceipt | undefined;
+  try {
+    await insertAttributes?.txn?.wait();
+    insertTxn = insertAttributes?.txn;
+  } catch (error) {
+    throw new Error(`Failed to insert attributes: ${error}`);
+  }
+
+  return insertTxn;
+}
+
+export async function updateAttributes(
+  db: LovePoemV2Database,
+  attributeTableName: string,
+  trait_type: string,
+  value: string | number,
+) {
+  const updateAttributesStmt = `UPDATE ${attributeTableName} SET value = ? WHERE trait_type = ?`;
+  const { meta: updateAttributes } = await db
+    .prepare(updateAttributesStmt)
+    .bind(`${value}`, `${trait_type}`)
+    .run();
+  let updateTxn: WaitableTransactionReceipt | undefined;
+  try {
+    await updateAttributes?.txn?.wait();
+    updateTxn = updateAttributes?.txn;
+  } catch (error) {
+    throw new Error(`Failed to update attributes: ${error}`);
+  }
+  return updateTxn;
 }

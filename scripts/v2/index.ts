@@ -1,2 +1,2 @@
-export { createLovePoemTables } from "./prepareTables";
+export { createTables, getJoinedTable } from "./prepareTables";
 export { prepareSqlForTables } from "./prepareSqlForTables";
