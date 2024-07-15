@@ -1,5 +1,5 @@
-const fs = require("fs");
-const path = require("path");
+import fs from "fs";
+import path from "path";
 
 export function retrieveAbi(contractName: string) {
   try {
@@ -11,6 +11,16 @@ export function retrieveAbi(contractName: string) {
     const json = JSON.parse(file);
     const abi = json.abi;
     return abi;
+  } catch (e) {
+    console.log(`e`, e);
+  }
+}
+
+export function retrieveMetadata(tokenId: string) {
+  const dir = path.join(__dirname, "../metadata", `${tokenId}`);
+  try {
+    const file = fs.readFileSync(dir, "utf8");
+    return file;
   } catch (e) {
     console.log(`e`, e);
   }
