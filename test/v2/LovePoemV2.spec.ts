@@ -12,6 +12,7 @@ import {
 } from "../../scripts/v2";
 import { retrieveMetadata } from "../../utils/retrieve-abi";
 import {
+  insertAttributes,
   selectFromJoinedTable,
   updateAttributes,
 } from "../../scripts/v2/prepareTables";
@@ -25,6 +26,8 @@ describe("LovePoemV2 Unit Tests", async function () {
   let db: LovePoemV2Database;
   let mainLovePoemTableName: string;
   let attributesLovePoemTableName: string;
+  let attributesLovePoemTableId: string;
+  let tokenId: number;
 
   const chainId = network.config.chainId!!;
   const accounts = getAccounts();
@@ -58,20 +61,23 @@ describe("LovePoemV2 Unit Tests", async function () {
   });
 
   it("Should create LovePoemV2 main table", async function () {
-    mainLovePoemTableName = await createTables(
+    const { tableName } = await createTables(
       mainTablePrefix,
       mainTableSchema,
       db,
     );
+    mainLovePoemTableName = tableName;
 
     expect(mainLovePoemTableName).to.equal(`${mainTablePrefix}_${chainId}_2`);
   });
   it("Should create LovePoemV2 attributes table", async function () {
-    attributesLovePoemTableName = await createTables(
+    const { tableName, tableId } = await createTables(
       attributesTablePrefix,
       attributesTableSchema,
       db,
     );
+    attributesLovePoemTableName = tableName;
+    attributesLovePoemTableId = tableId;
     expect(attributesLovePoemTableName).to.equal(
       `${attributesTablePrefix}_${chainId}_3`,
     );
@@ -127,13 +133,13 @@ describe("LovePoemV2 Unit Tests", async function () {
     const mintTxn = await mintLovePoemV2Token.wait();
     console.log("LovePoemV2 mint txn event args: ", mintTxn?.events?.[0]?.args);
     const mintReceipient = mintTxn?.events?.[0]?.args?.[1];
-    const tokenId = mintTxn?.events?.[0]?.args?.[2];
+    tokenId = mintTxn?.events?.[0]?.args?.[2];
     console.log(
-      `\nLovePoemV2Token minted: tokenId '${tokenId.toNumber()}' to owner '${mintReceipient}'`,
+      `\nLovePoemV2Token minted: tokenId '${tokenId}' to owner '${mintReceipient}'`,
     );
     const tokenURI = await lovePoemV2.tokenURI(tokenId);
     console.log(`'tokenURI' using token '${tokenId}' here:\n${tokenURI}`);
-    expect(tokenId.toNumber()).to.equal(0);
+    expect(tokenId).to.equal(0);
   });
   it("Should return the joined LovePoemV2 table in JSON format equal to the original metaddata", async function () {
     const [joinedTable] = await getJoinedTable(
@@ -168,5 +174,29 @@ describe("LovePoemV2 Unit Tests", async function () {
       }[]
     )?.find(({ trait_type }) => trait_type === "Status");
     expect(updatedAttribute?.value).to.equal("GATE_OPEN");
+  });
+  it("Should insert new attribute of LovePoemV2 with existing tokenId", async function () {
+    await insertAttributes(
+      db,
+      tokenId.toString(),
+      attributesLovePoemTableName,
+      "ExclusiveAccess",
+      "UNRELEASED_TRACKS",
+    );
+    const selectAttributeStmt = `json_group_array(json_object('trait_type',trait_type,'value', value)) as attributes `;
+    const [updatedAttributesObj] = await selectFromJoinedTable(
+      db,
+      mainLovePoemTableName,
+      attributesLovePoemTableName,
+      selectAttributeStmt,
+    );
+    console.log("Updated Attributes: ", updatedAttributesObj);
+    const updatedAttribute = (
+      updatedAttributesObj?.attributes as unknown as {
+        trait_type: string;
+        value: string;
+      }[]
+    )?.find(({ trait_type }) => trait_type === "ExclusiveAccess");
+    expect(updatedAttribute?.value).to.equal("UNRELEASED_TRACKS");
   });
 });

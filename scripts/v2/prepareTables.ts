@@ -10,15 +10,17 @@ export async function createTables(
   const { meta: createTable } = await db.prepare(createTableStmt).all();
 
   let tableName = "";
+  let tableId = "";
 
   try {
     await createTable.txn?.wait();
     tableName = createTable?.txn?.name || "";
+    tableId = createTable?.txn?.tableId || "";
   } catch (error) {
     throw new Error(`Failed to create table: ${error}`);
   }
 
-  return tableName;
+  return { tableName, tableId };
 }
 
 export async function getJoinedTable(
@@ -57,26 +59,24 @@ export async function selectFromJoinedTable(
 
 export async function insertAttributes(
   db: LovePoemV2Database,
-  attributesTableId: string,
+  tokenId: string,
   attributeTableName: string,
   trait_type: string,
   value: string | number,
 ) {
   const insertAttributesStmt = `INSERT INTO ${attributeTableName} (main_id, trait_type, value) VALUES (?, ?, ?)`;
-  const { meta: insertAttributes } = await db
+  const { meta: insertNewAttributes } = await db
     .prepare(insertAttributesStmt)
-    .bind(`${attributesTableId}`, `${trait_type}`, `${value}`)
+    .bind(`${tokenId}`, `${trait_type}`, `${value}`)
     .run();
 
-  let insertTxn: WaitableTransactionReceipt | undefined;
   try {
-    await insertAttributes?.txn?.wait();
-    insertTxn = insertAttributes?.txn;
+    await insertNewAttributes?.txn?.wait();
   } catch (error) {
     throw new Error(`Failed to insert attributes: ${error}`);
   }
 
-  return insertTxn;
+  return insertNewAttributes;
 }
 
 export async function updateAttributes(
