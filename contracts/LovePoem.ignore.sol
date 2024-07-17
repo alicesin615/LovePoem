@@ -13,7 +13,9 @@ enum RequestPurpose {
 interface IVRFv2Consumer {
 	function prepRequest(RequestPurpose requestPurpose) external payable returns (uint256 requestId);
 
-	function getRequestStatus(uint256 requestId) external view returns (bool fulfilled, uint256[] memory randomWords, RequestPurpose requestPurpose);
+	function getRequestStatus(
+		uint256 requestId
+	) external view returns (bool fulfilled, uint256[] memory randomWords, RequestPurpose requestPurpose);
 
 	function createNewSubscription() external returns (uint256 subscriptionId);
 
@@ -83,7 +85,8 @@ contract LovePoem is ERC721URIStorage, Ownable {
 
 	function receiveRandomness(uint256 _requestId) external onlyOwner returns (uint256[] memory) {
 		s_requestId = _requestId;
-		(bool fulfilled, uint256[] memory randomWords, RequestPurpose requestPurpose) = vrfConsumer.getRequestStatus(s_requestId);
+		(bool fulfilled, uint256[] memory randomWords, RequestPurpose requestPurpose) = vrfConsumer
+			.getRequestStatus(s_requestId);
 		s_fulfilled = fulfilled;
 		s_randomWords = randomWords;
 		s_requestPurpose = requestPurpose;
@@ -103,10 +106,17 @@ contract LovePoem is ERC721URIStorage, Ownable {
 		mintPoem(requester, photoCard, exclusiveAccess, letterToIU);
 	}
 
-	function mintPoem(address to, PhotoCard _photoCard, ExclusiveAccess _exclusiveAccess, bool _letterToIU) internal onlyOwner {
+	function mintPoem(
+		address to,
+		PhotoCard _photoCard,
+		ExclusiveAccess _exclusiveAccess,
+		bool _letterToIU
+	) internal onlyOwner {
 		LovePoemPlus memory lovePoemPlus = LovePoemPlus(_photoCard, _exclusiveAccess, _letterToIU);
 		poems[currentPoemId] = lovePoemPlus;
-		string memory assignedPhotoCard = _photoCard == PhotoCard.LILAC ? "1" : _photoCard == PhotoCard.PALETTE ? "2" : "3";
+		string memory assignedPhotoCard = _photoCard == PhotoCard.LILAC ? "1" : _photoCard == PhotoCard.PALETTE
+			? "2"
+			: "3";
 
 		_safeMint(to, currentPoemId);
 		_setTokenURI(currentPoemId, string(abi.encodePacked(baseURI, assignedPhotoCard, ".jpeg")));

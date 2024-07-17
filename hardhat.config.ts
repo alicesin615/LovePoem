@@ -1,5 +1,5 @@
 import dotenv from "dotenv";
-import { extendEnvironment } from "hardhat/config";
+import { extendEnvironment, subtask } from "hardhat/config";
 import type {
   HardhatUserConfig,
   HardhatRuntimeEnvironment,
@@ -11,6 +11,7 @@ import "@nomiclabs/hardhat-ethers";
 import "@tableland/hardhat";
 import "@tableland/evm";
 import "@tableland/sdk";
+import { TASK_COMPILE_SOLIDITY_GET_SOURCE_PATHS } from "hardhat/builtin-tasks/task-names";
 
 dotenv.config();
 
@@ -18,11 +19,20 @@ const SEPOLIA_RPC_URL = process.env.SEPOLIA_RPC_URL;
 const PRIVATE_KEY = process.env.PRIVATE_KEY;
 const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY;
 const POLYGONSCAN_API_KEY = process.env.POLYGONSCAN_API_KEY;
-
 const ALCHEMY_POLYGON_AMOY_API_KEY = process.env.ALCHEMY_POLYGON_AMOY_API_KEY;
 
+// exclude **.ignore.sol from compilation
+subtask(TASK_COMPILE_SOLIDITY_GET_SOURCE_PATHS).setAction(
+  async (_, __, runSuper) => {
+    const paths = await runSuper();
+    return paths.filter((p: any) => !p.includes("ignore"));
+  },
+);
+
 const config: HardhatUserConfig = {
-  solidity: "0.8.22",
+  solidity: {
+    version: "0.8.22",
+  },
   defaultNetwork: "hardhat",
   localTableland: {
     silent: false,

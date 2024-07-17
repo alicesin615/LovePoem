@@ -1,6 +1,6 @@
 //  SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
-import "../LovePoem.sol";
+import "../LovePoem.ignore.sol";
 import "../LovePoemLib.sol";
 
 interface ILovePoem {
@@ -8,7 +8,12 @@ interface ILovePoem {
 
 	function preparePoemToMint(address requester, uint256[] memory randomWords) external;
 
-	function mintPoem(address to, LovePoemLib.PhotoCard _photoCard, LovePoemLib.ExclusiveAccess _exclusiveAccess, LovePoemLib.LetterToIU _letterToIU) external;
+	function mintPoem(
+		address to,
+		LovePoemLib.PhotoCard _photoCard,
+		LovePoemLib.ExclusiveAccess _exclusiveAccess,
+		LovePoemLib.LetterToIU _letterToIU
+	) external;
 
 	function getPoemInfo(uint256 poemId) external view returns (LovePoemLib.LovePoem memory);
 
