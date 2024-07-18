@@ -5,6 +5,7 @@ import "@chainlink/contracts/src/v0.8/vrf/interfaces/VRFCoordinatorV2Interface.s
 import "@chainlink/contracts/src/v0.8/vrf/VRFConsumerBaseV2.sol";
 import "@chainlink/contracts/src/v0.8/shared/access/ConfirmedOwner.sol";
 import "@chainlink/contracts/src/v0.8/shared/interfaces/LinkTokenInterface.sol";
+import "./LovePoemLib.sol";
 
 contract VRFv2Consumer is ConfirmedOwner, VRFConsumerBaseV2 {
 	VRFCoordinatorV2Interface immutable COORDINATOR;
@@ -22,17 +23,12 @@ contract VRFv2Consumer is ConfirmedOwner, VRFConsumerBaseV2 {
 
 	uint256[] public s_randomWords;
 	uint256 public s_requestId;
-	RequestPurpose public s_requestPurpose;
-
-	enum RequestPurpose {
-		Mint,
-		UnlockSurprise
-	}
+	LovePoemLib.RequestPurpose public s_requestPurpose;
 
 	struct RequestStatus {
 		bool fulfilled;
 		bool exists;
-		RequestPurpose requestPurpose;
+		LovePoemLib.RequestPurpose requestPurpose;
 		uint256[] randomWords;
 	}
 
@@ -42,10 +38,17 @@ contract VRFv2Consumer is ConfirmedOwner, VRFConsumerBaseV2 {
 
 	error RequestNotFound(uint256 requestId);
 	error InsufficientFunds(uint256 amount);
-	event RequestSent(uint256 requestId, RequestPurpose requestPurpose);
-	event RequestFulfilled(uint256 requestId, uint256[] randomWords, RequestPurpose requestPurpose);
+	event RequestSent(uint256 requestId, LovePoemLib.RequestPurpose requestPurpose);
+	event RequestFulfilled(uint256 requestId, uint256[] randomWords, LovePoemLib.RequestPurpose requestPurpose);
 
-	constructor(address _vrfCoordinator, address _linkTokenContract, bytes32 keyHash, uint16 requestConfirmations, uint32 callbackGasLimit, uint32 numWords) VRFConsumerBaseV2(_vrfCoordinator) ConfirmedOwner(msg.sender) {
+	constructor(
+		address _vrfCoordinator,
+		address _linkTokenContract,
+		bytes32 keyHash,
+		uint16 requestConfirmations,
+		uint32 callbackGasLimit,
+		uint32 numWords
+	) VRFConsumerBaseV2(_vrfCoordinator) ConfirmedOwner(msg.sender) {
 		COORDINATOR = VRFCoordinatorV2Interface(_vrfCoordinator);
 		LINKTOKEN = LinkTokenInterface(_linkTokenContract);
 		s_keyHash = keyHash;
@@ -58,16 +61,27 @@ contract VRFv2Consumer is ConfirmedOwner, VRFConsumerBaseV2 {
 
 	/**
 	 * @notice Prepares a request to be fulfilled
-	 * @param requestPurpose The purpose of the request to be defined by LovePoem : Enum RequestPurpose
+	 * @param requestPurpose The purpose of the request to be defined by LovePoemLib : Enum RequestPurpose
 	 */
-	function prepRequest(RequestPurpose requestPurpose) external payable returns (uint256 requestId) {
+	function prepRequest(LovePoemLib.RequestPurpose requestPurpose) external payable returns (uint256 requestId) {
 		s_requestPurpose = requestPurpose;
 		return requestRandomWordsFor(requestPurpose);
 	}
 
-	function requestRandomWordsFor(RequestPurpose requestPurpose) internal returns (uint256 requestId) {
-		requestId = COORDINATOR.requestRandomWords(s_keyHash, s_subscriptionId, s_requestConfirmations, s_callbackGasLimit, s_numWords);
-		s_requests[requestId] = RequestStatus({fulfilled: false, exists: true, requestPurpose: requestPurpose, randomWords: new uint256[](0)});
+	function requestRandomWordsFor(LovePoemLib.RequestPurpose requestPurpose) internal returns (uint256 requestId) {
+		requestId = COORDINATOR.requestRandomWords(
+			s_keyHash,
+			s_subscriptionId,
+			s_requestConfirmations,
+			s_callbackGasLimit,
+			s_numWords
+		);
+		s_requests[requestId] = RequestStatus({
+			fulfilled: false,
+			exists: true,
+			requestPurpose: requestPurpose,
+			randomWords: new uint256[](0)
+		});
 		requestIds.push(requestId);
 		lastRequestId = requestId;
 		emit RequestSent(requestId, requestPurpose);
@@ -90,7 +104,13 @@ contract VRFv2Consumer is ConfirmedOwner, VRFConsumerBaseV2 {
 		emit RequestFulfilled(s_requestId, s_randomWords, s_requestPurpose);
 	}
 
-	function getRequestStatus(uint256 requestId) external view returns (bool fulfilled, uint256[] memory randomWords, RequestPurpose requestPurpose) {
+	function getRequestStatus(
+		uint256 requestId
+	)
+		external
+		view
+		returns (bool fulfilled, uint256[] memory randomWords, LovePoemLib.RequestPurpose requestPurpose)
+	{
 		if (s_requests[requestId].exists == false) {
 			revert RequestNotFound(requestId);
 		}
