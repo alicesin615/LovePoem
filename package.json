@@ -4,17 +4,20 @@
   "scripts": {
     "dev": "node --loader ts-node/esm",
     "deploy:local": "npx hardhat run scripts/v2/deployTables.ts --network localhost",
-    "test": "mocha --require ts-node/register --require hardhat/register --config '.mocharc.json' 'test/v2/setup.spec.ts' 'test/v2/*.spec.ts' --extension ts"
+    "test:vrf": "mocha --require ts-node/register --require hardhat/register --config '.mocharc.json' 'test/random-numbers/*.spec.ts' --extension ts",
+    "test:tableland": "mocha --require ts-node/register --require hardhat/register --config '.mocharc.json' 'test/v2/setup.spec.ts' 'test/v2/*.spec.ts' --extension ts"
   },
   "author": "alicesin615",
   "devDependencies": {
     "@ethersproject/abi": "^5.7.0",
     "@ethersproject/providers": "^5.7.2",
+    "@nomicfoundation/hardhat-network-helpers": "^1.0.11",
     "@nomicfoundation/hardhat-toolbox": "^2.0.0",
     "@nomicfoundation/hardhat-verify": "^2.0.8",
     "@nomiclabs/hardhat-ethers": "^2.1.1",
     "@nomiclabs/hardhat-etherscan": "^3.1.8",
     "@tableland/hardhat": "^0.0.9",
+    "@typechain/hardhat": "^6.1.6",
     "@types/chai": "^4.3.16",
     "@types/mocha": "^10.0.7",
     "@types/node-fetch": "^2.6.11",
