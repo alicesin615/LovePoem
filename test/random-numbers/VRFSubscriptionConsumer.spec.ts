@@ -9,10 +9,9 @@ import {
   VRFSubscriptionConsumer,
   VRFSubscriptionConsumer__factory,
 } from "../../typechain-types";
+import { RequestPurpose } from "../../models";
 
 describe("VRFSubscriptionConsumer Unit Tests", async function () {
-  // const subscriptionId = process.env.VRF_SUBSCRIPTION_ID!!;
-
   // network-specific configs
   const chainId = network.config.chainId!!;
   const chosenNetworkConfig = networkConfig?.[chainId];
@@ -26,7 +25,7 @@ describe("VRFSubscriptionConsumer Unit Tests", async function () {
 
   // adjustable configs depending on needs
   const requestConfirmations = 3;
-  const callbackGasLimit = 100000;
+  const callbackGasLimit = 300000; // increased to fulfill requests quicker
   const numWords = 3;
 
   let deployer: Signer;
@@ -37,6 +36,8 @@ describe("VRFSubscriptionConsumer Unit Tests", async function () {
   let VRFSubscriptionConsumerFactory: VRFSubscriptionConsumer__factory;
   let vrfSubscriptionConsumer: VRFSubscriptionConsumer;
   let vrfSubscriptionConsumerAddr: string;
+
+  let requestId: string;
 
   this.beforeAll(async () => {
     // For LOCAL TESTING: Deploy Mock VRF Coordinator Contract
@@ -55,10 +56,6 @@ describe("VRFSubscriptionConsumer Unit Tests", async function () {
       );
       await vrfCoordinatorMock.deployed();
       vrfCoordinatorAddr = vrfCoordinatorMock.address;
-      console.log(
-        "VRFCoordinatorV2Mock deployed at: ",
-        vrfCoordinatorMock.address,
-      );
       const createSubscriptionReceipt = (
         await vrfCoordinatorMock.createSubscription()
       ).wait();
@@ -74,14 +71,15 @@ describe("VRFSubscriptionConsumer Unit Tests", async function () {
       vrfCoordinatorAddr = testnetVrfCoordinator!!;
     }
 
-    console.log("subscriptionId: ", subscriptionId, typeof subscriptionId);
+    console.log("subscriptionId: ", subscriptionId);
     // Deploy Consumer Contract
     VRFSubscriptionConsumerFactory = (await hre.ethers.getContractFactory(
       "VRFSubscriptionConsumer",
     )) as VRFSubscriptionConsumer__factory;
 
+    console.log("VRFCoordinatorMock deployed at: ", vrfCoordinatorAddr);
+
     VRFSubscriptionConsumerFactory.connect(deployer);
-    console.log("VRFCoordinatorV2_5Mock deployed to: ", vrfCoordinatorAddr);
     vrfSubscriptionConsumer = await VRFSubscriptionConsumerFactory.deploy(
       vrfCoordinatorAddr,
       subscriptionId,
@@ -97,6 +95,7 @@ describe("VRFSubscriptionConsumer Unit Tests", async function () {
     );
     vrfSubscriptionConsumerAddr = vrfSubscriptionConsumer.address;
   });
+
   it("Should add VRFSubscriptionConsumer as consumer", async function () {
     const addConsumerReceipt = (
       await vrfCoordinatorMock.addConsumer(
@@ -109,6 +108,13 @@ describe("VRFSubscriptionConsumer Unit Tests", async function () {
     });
     expect(addedConsumer).to.be.equal(true);
   });
+  it("Should check if consumer is added", async function () {
+    const consumerAdded = await vrfCoordinatorMock.consumerIsAdded(
+      subscriptionId,
+      vrfSubscriptionConsumerAddr,
+    );
+    expect(consumerAdded).to.be.equal(true);
+  });
   it("Should fund subscription", async function () {
     const fundSubscriptionReceipt = (
       await vrfCoordinatorMock.fundSubscription(
@@ -120,5 +126,48 @@ describe("VRFSubscriptionConsumer Unit Tests", async function () {
       return e?.event === "SubscriptionFunded";
     });
     expect(funded).to.be.equal(true);
+  });
+
+  it("Should request randomness", async function () {
+    const requestRandomnessReceipt = await (
+      await vrfSubscriptionConsumer.requestRandomWords(
+        false,
+        RequestPurpose.UNLOCK_EXCLUSIVE_EXCESS,
+      )
+    ).wait();
+    const requested = requestRandomnessReceipt.events?.some((e) => {
+      if (e?.event === "RequestSent") {
+        requestId = e?.args?.requestId?.toString();
+        return true;
+      }
+    });
+    expect(requested).to.be.equal(true);
+  });
+  it("Should return requestId", async function () {
+    expect(requestId).to.be.equal("1");
+  });
+
+  it("Should fulfill randomness", async function () {
+    const fulfillRandomnessReceipt = await (
+      await vrfCoordinatorMock.fulfillRandomWords(
+        requestId,
+        vrfSubscriptionConsumerAddr,
+      )
+    ).wait();
+    const fulfilled = fulfillRandomnessReceipt.events?.some((e) => {
+      if (e?.event === "RandomWordsFulfilled") {
+        return true;
+      }
+    });
+    expect(fulfilled).to.be.equal(true);
+  });
+  it("Should return random words", async function () {
+    const requestStatusReceipt =
+      await vrfSubscriptionConsumer.getRequestStatus(requestId);
+    const { randomWords, fulfilled, requestPurpose } =
+      requestStatusReceipt || {};
+    randomWords.forEach((word) => {
+      expect(word).to.exist;
+    });
   });
 });
