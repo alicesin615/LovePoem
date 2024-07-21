@@ -31,7 +31,20 @@ subtask(TASK_COMPILE_SOLIDITY_GET_SOURCE_PATHS).setAction(
 
 const config: HardhatUserConfig = {
   solidity: {
-    version: "0.8.22",
+    compilers: [
+      {
+        version: "0.8.22",
+      },
+      {
+        version: "0.8.19",
+      },
+    ],
+    settings: {
+      optimizer: {
+        enabled: true,
+        runs: 200,
+      },
+    },
   },
   defaultNetwork: "hardhat",
   localTableland: {
@@ -47,9 +60,15 @@ const config: HardhatUserConfig = {
       },
       // tags: ["test", "local"],
       loggingEnabled: true,
+      allowUnlimitedContractSize: true,
+      gas: "auto",
+      gasPrice: "auto",
     },
     localhost: {
       chainId: 31337,
+      allowUnlimitedContractSize: true,
+      gas: "auto",
+      gasPrice: "auto",
     },
     sepolia: {
       url: SEPOLIA_RPC_URL !== undefined ? SEPOLIA_RPC_URL : "",

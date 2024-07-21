@@ -20,9 +20,11 @@
   "include": [
     "scripts/v2/*.ts",
     "utils/*.ts",
+    "tasks/",
     "contracts/*.sol",
     "typechain-types",
     "test/v2/*.spec.ts",
+    "test/random-numbers/",
     "helper-hardhat-config.ts"
   ],
   "files": ["hardhat.config.ts"]

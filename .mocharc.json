@@ -1,6 +1,7 @@
 {
   "require": "hardhat/register",
   "timeout": 40000,
-  "_": ["test/v2/*.spec.ts"],
-  "extension": ["ts"]
+  "_": ["test/v2/*.spec.ts", "test/random-numbers/*.spec.ts"],
+  "extension": ["ts"],
+  "recursive": true
 }

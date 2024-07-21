@@ -1,4 +1,3 @@
-import { BigNumber } from "ethers";
 import { baseURIs } from "@tableland/evm/network";
 import { NetworkConfigMap } from "./models";
 
@@ -15,29 +14,37 @@ const formatBaseURI = (baseURI: string) => {
 
 export const networkConfig: NetworkConfigMap = {
   default: {
+    gasPriceLink: "1000000000",
     name: "hardhat",
-    fee: "100000000000000000",
+    linkToken: "0x779877A7B0D9E8603169DdbD7836e478b4624789",
+    baseFee: "100000000000000000",
+    weiPerUnitLink: "4035249379403102",
     keyHash:
-      "0xd89b2bf150e3b9e13446986e571fb9cab24b13cea0a43ea20a6049a85cc807cc",
-    jobId: "29fa9aa13bf1468788b7cc4a500a45b8",
-    fundAmount: BigNumber.from("1000000000000000000"),
-    keepersUpdateInterval: "30",
+      "0x787d74caea10b2b357790d5b5247c2f63d1d91572a9846f780606e4d953677ae",
     tablelandBaseURI: formatBaseURI(localTablelandBaseURI),
   },
   31337: {
+    gasPriceLink: "1000000000",
     name: "localhost",
-    fee: "100000000000000000",
+    linkToken: "0x779877A7B0D9E8603169DdbD7836e478b4624789",
+    baseFee: "100000000000000000",
+    weiPerUnitLink: "4035249379403102",
     keyHash:
-      "0xd89b2bf150e3b9e13446986e571fb9cab24b13cea0a43ea20a6049a85cc807cc",
-    jobId: "29fa9aa13bf1468788b7cc4a500a45b8",
-    fundAmount: BigNumber.from("1000000000000000000"),
-    keepersUpdateInterval: "30",
-    ethUsdPriceFeed: "0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419",
+      "0x787d74caea10b2b357790d5b5247c2f63d1d91572a9846f780606e4d953677ae",
     tablelandBaseURI: formatBaseURI(localTablelandBaseURI),
     mainTablePrefix: "love_poem_main",
     attributesTablePrefix: "love_poem_attributes",
   },
+  11155111: {
+    name: "sepolia",
+    linkToken: "0x779877A7B0D9E8603169DdbD7836e478b4624789",
+    baseFee: "100000000000000000",
+    weiPerUnitLink: "4035249379403102",
+    vrfCoordinator: "0x8103B0A8A00be2DDC778e6e7eaaB76FF08963d2c",
+    keyHash:
+      "0x787d74caea10b2b357790d5b5247c2f63d1d91572a9846f780606e4d953677ae",
+  },
 };
 
-export const developmentChains: string[] = ["hardhat", "localhost"];
+export const developmentChains: string[] = ["hardhat", "localhost", "sepolia"];
 export const VERIFICATION_BLOCK_CONFIRMATIONS = 6;
