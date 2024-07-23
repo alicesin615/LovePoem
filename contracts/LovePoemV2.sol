@@ -21,9 +21,12 @@ contract LovePoemV2 is ERC721URIStorage, Ownable {
 	mapping(uint256 => address) public tokenHolders; // mapping(tokenId => holderAddress)
 
 	event HoldershipTransferred(uint256 tokenId, address oldHolder, address newHolder);
+	event PoemMinted(uint256 indexed tokenId, address owner);
+	event SuccessfullyDonated(address donor, uint256 donationAmount);
 
 	error InvalidHolder(uint256 tokenId, address requester);
 	error InvalidTokenId(uint256 tokenId);
+	error FailedToDonate(address donor, uint256 donationAmount);
 
 	constructor(
 		string memory _initialBaseURI,
@@ -101,12 +104,18 @@ contract LovePoemV2 is ERC721URIStorage, Ownable {
 	}
 
 	/**
-	 * @dev Mint an NFT, incrementing the `_tokenIdCounter` upon each call.
+	 * @dev Mint an NFT, incrementing the `tokenIdCounter` upon each call.
 	 */
 	function mint() public {
 		require(tokenIdCounter < maxSupply, "Maximum number of tokens have been minted");
-		tokenIdCounter++;
 		_safeMint(msg.sender, tokenIdCounter);
+		emit PoemMinted(tokenIdCounter, msg.sender);
+		setTokenURI(tokenIdCounter);
+		tokenIdCounter++;
+	}
+
+	function setTokenURI(uint256 tokenId) internal onlyHolder(tokenId) {
+		_setTokenURI(tokenId, tokenURI(tokenId));
 	}
 
 	/**
@@ -120,11 +129,33 @@ contract LovePoemV2 is ERC721URIStorage, Ownable {
 		return _ownerOf(tokenId) == msg.sender;
 	}
 
-	function transferHoldership(address newHolder, uint256 tokenId) external onlyHolder(tokenId) {
-		if (isHolder(tokenId)) {
-			tokenHolders[tokenId] = newHolder;
-			emit HoldershipTransferred(tokenId, msg.sender, newHolder);
+	/**
+	 * @notice Transfer nft to new address if the caller is the token holder.
+	 * if isResale, % of the newly updated price of token will be donated
+	 * Assumes that the newHolder has already made the payment.
+	 *
+	 * @param currPrice required for validating the donation
+	 **/
+	function transferHoldership(
+		address newHolder,
+		address donationAddress,
+		uint256 tokenId,
+		uint256 currPrice,
+		bool isResale
+	) external payable onlyHolder(tokenId) {
+		require(newHolder != address(0) && newHolder != msg.sender, "Invalid receipient address");
+		safeTransferFrom(msg.sender, newHolder, tokenId);
+		tokenHolders[tokenId] = newHolder;
+
+		if (isResale) {
+			require(msg.value == (currPrice / LovePoemLib.ResaleDonationRatio), "Invalid donation amount");
+			(bool success, ) = payable(donationAddress).call{value: msg.value}("");
+			if (!success) {
+				revert FailedToDonate(msg.sender, msg.value);
+			}
+			emit SuccessfullyDonated(msg.sender, msg.value);
 		}
+		emit HoldershipTransferred(tokenId, msg.sender, newHolder);
 	}
 
 	function totalSupply() public pure returns (uint256) {
