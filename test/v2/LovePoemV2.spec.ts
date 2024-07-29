@@ -18,6 +18,7 @@ import {
 } from "../../scripts/v2/prepareTables";
 import { Wallet, Signer } from "@tableland/local/node_modules/ethers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
+import { BigNumber } from "ethers";
 
 describe("LovePoemV2 Unit Tests", async function () {
   // Set a timeout for spinning up the Local Tableland instance during setup
@@ -29,7 +30,7 @@ describe("LovePoemV2 Unit Tests", async function () {
   let signer: Wallet;
   let originalHolder: SignerWithAddress;
   let newHolder: SignerWithAddress;
-  let donor: SignerWithAddress;
+  let donee: SignerWithAddress;
 
   let db: LovePoemV2Database;
   let mainLovePoemTableName: string;
@@ -49,7 +50,7 @@ describe("LovePoemV2 Unit Tests", async function () {
     // first acc used to deploy tables
     signer = getAccounts()?.[1];
     db = getDatabase(signer);
-    [, , originalHolder, newHolder, donor] = await ethers.getSigners();
+    [, , originalHolder, newHolder, donee] = await ethers.getSigners();
 
     LovePoemV2Factory = (await hre.ethers.getContractFactory(
       "LovePoemV2",
@@ -139,6 +140,7 @@ describe("LovePoemV2 Unit Tests", async function () {
     console.log("LovePoemV2 baseURI: ", lovePoemV2BaseURI);
     expect(lovePoemV2BaseURI).to.equal(tablelandBaseURI);
   });
+
   it("Should mint a LovePoemV2", async function () {
     console.log(
       "Connect LovePoemV2 & Mint to Original Holder with address: ",
@@ -168,6 +170,7 @@ describe("LovePoemV2 Unit Tests", async function () {
 
     expect(metadata).to.deep.equal(retrievedOriginalMetadata);
   });
+
   it("Should update the status attribute of LovePoemV2 to GATE_OPEN", async function () {
     await updateAttributes(
       db,
@@ -232,25 +235,37 @@ describe("LovePoemV2 Unit Tests", async function () {
       ).toString(),
     );
 
+    const initialDonationBalance = await donee.getBalance();
+    console.log(
+      "Balance of donee after transfer: ",
+      donee.address,
+      initialDonationBalance.toString(),
+    );
+
     const transferHoldershipTxn = await lovePoemV2
       .connect(originalHolder)
       .transferHoldership(
         newHolder.address,
-        donor.address,
+        donee.address,
         tokenId,
         1000000,
-        false,
+        true,
+        {
+          value: 500000,
+        },
       );
     const transferHoldershipTxnReceipt = await transferHoldershipTxn.wait();
-    const currentHolder = transferHoldershipTxnReceipt?.events?.find(
-      (e) => e?.event === "HoldershipTransferred",
-    )?.args?.newHolder;
-    const currentHolderBalance = await lovePoemV2.balanceOf(currentHolder);
+    console.log("transferHoldershipTxnReceipt: ", transferHoldershipTxnReceipt);
+    const finalDonationAmt = (await donee.getBalance()).toString();
     console.log(
-      "Current holder: ",
-      currentHolder,
-      currentHolderBalance.toString(),
+      "Balance of donee after transfer: ",
+      donee.address,
+      finalDonationAmt.toString(),
     );
-    expect(currentHolder).to.equal(newHolder.address);
+
+    const donatedAmount = BigNumber.from(finalDonationAmt).sub(
+      BigNumber.from(initialDonationBalance),
+    );
+    expect(donatedAmount.toString()).to.equal("500000");
   });
 });
