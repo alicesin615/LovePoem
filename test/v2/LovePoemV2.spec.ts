@@ -1,4 +1,4 @@
-import hre, { network } from "hardhat";
+import hre, { network, ethers } from "hardhat";
 import { expect } from "chai";
 import { describe, it } from "mocha";
 import { getAccounts, getDatabase } from "@tableland/local";
@@ -16,12 +16,20 @@ import {
   selectFromJoinedTable,
   updateAttributes,
 } from "../../scripts/v2/prepareTables";
+import { Wallet, Signer } from "@tableland/local/node_modules/ethers";
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
+
 describe("LovePoemV2 Unit Tests", async function () {
   // Set a timeout for spinning up the Local Tableland instance during setup
   this.timeout(20000);
 
   let LovePoemV2Factory: LovePoemV2__factory;
   let lovePoemV2: LovePoemV2;
+
+  let signer: Wallet;
+  let originalHolder: SignerWithAddress;
+  let newHolder: SignerWithAddress;
+  let donor: SignerWithAddress;
 
   let db: LovePoemV2Database;
   let mainLovePoemTableName: string;
@@ -30,18 +38,19 @@ describe("LovePoemV2 Unit Tests", async function () {
   let tokenId: number;
 
   const chainId = network.config.chainId!!;
-  const accounts = getAccounts();
-  const tablelandBaseURI = networkConfig?.[chainId]?.tablelandBaseURI!!;
+  const tablelandBaseURI = `${networkConfig?.[chainId]?.tablelandBaseURI}query?unwrap=true&extract=true&statement=`;
   const mainTablePrefix: string = networkConfig?.[chainId]?.mainTablePrefix!!;
   const attributesTablePrefix: string =
     networkConfig?.[chainId]?.attributesTablePrefix!!;
   const mainTableSchema = `id int primary key, name text, description text, image text`;
   const attributesTableSchema = `main_id int not null, trait_type text not null, value text`;
-  // const tablelandBaseURI = helpers.getBaseUrl(chainId);
-  // const provider = getDefaultProvider(tablelandBaseURI);
-  db = getDatabase(accounts?.[1]);
 
   before(async () => {
+    // first acc used to deploy tables
+    signer = getAccounts()?.[1];
+    db = getDatabase(signer);
+    [, , originalHolder, newHolder, donor] = await ethers.getSigners();
+
     LovePoemV2Factory = (await hre.ethers.getContractFactory(
       "LovePoemV2",
     )) as LovePoemV2__factory;
@@ -56,7 +65,7 @@ describe("LovePoemV2 Unit Tests", async function () {
       "LovePoemV2 deployed to: ",
       lovePoemV2.address,
       "by ",
-      await lovePoemV2.owner(),
+      await lovePoemV2.signer.getAddress(),
     );
   });
 
@@ -124,23 +133,30 @@ describe("LovePoemV2 Unit Tests", async function () {
       expect(insertIntoMainResult?.tableId).to.equal("2");
     }
   });
+
   it("Should get initial baseURI of LovePoemV2 same as tableland baseURI of given network", async function () {
     const lovePoemV2BaseURI = await lovePoemV2.getBaseURIString();
+    console.log("LovePoemV2 baseURI: ", lovePoemV2BaseURI);
     expect(lovePoemV2BaseURI).to.equal(tablelandBaseURI);
   });
-  it("Should mint a LovePoemV2 with tokenId", async function () {
-    const mintLovePoemV2Token = await lovePoemV2.mint();
-    const mintTxn = await mintLovePoemV2Token.wait();
-    console.log("LovePoemV2 mint txn event args: ", mintTxn?.events?.[0]?.args);
-    const mintReceipient = mintTxn?.events?.[0]?.args?.[1];
-    tokenId = mintTxn?.events?.[0]?.args?.[2];
+  it("Should mint a LovePoemV2", async function () {
     console.log(
-      `\nLovePoemV2Token minted: tokenId '${tokenId}' to owner '${mintReceipient}'`,
+      "Connect LovePoemV2 & Mint to Original Holder with address: ",
+      originalHolder.address,
+    );
+    const mintLovePoemV2Token = await lovePoemV2.connect(originalHolder).mint();
+    const mintTxn = await mintLovePoemV2Token.wait();
+    console.log("LovePoemV2 mint txn event logs: ", mintTxn?.events);
+    const mintReceipient = mintTxn?.events?.[0]?.args?.to;
+    tokenId = mintTxn?.events?.[0]?.args?.tokenId;
+    console.log(
+      `\nLovePoemV2Token minted: tokenId '${tokenId}' to '${mintReceipient}'`,
     );
     const tokenURI = await lovePoemV2.tokenURI(tokenId);
     console.log(`'tokenURI' using token '${tokenId}' here:\n${tokenURI}`);
-    expect(tokenId).to.equal(0);
+    expect(tokenId).to.equal("0");
   });
+
   it("Should return the joined LovePoemV2 table in JSON format equal to the original metaddata", async function () {
     const [joinedTable] = await getJoinedTable(
       db,
@@ -175,6 +191,7 @@ describe("LovePoemV2 Unit Tests", async function () {
     )?.find(({ trait_type }) => trait_type === "Status");
     expect(updatedAttribute?.value).to.equal("GATE_OPEN");
   });
+
   it("Should insert new attribute of LovePoemV2 with existing tokenId", async function () {
     await insertAttributes(
       db,
@@ -198,5 +215,42 @@ describe("LovePoemV2 Unit Tests", async function () {
       }[]
     )?.find(({ trait_type }) => trait_type === "ExclusiveAccess");
     expect(updatedAttribute?.value).to.equal("UNRELEASED_TRACKS");
+  });
+
+  it("Should transfer holdership to new address", async function () {
+    console.log(
+      "Balance of Original Holder before transfer: ",
+      originalHolder.address,
+      (await lovePoemV2.balanceOf(originalHolder.address)).toString(),
+    );
+
+    console.log(
+      "Balance of New Holder before transfer: ",
+      newHolder.address,
+      (
+        await lovePoemV2.connect(newHolder).balanceOf(newHolder.address)
+      ).toString(),
+    );
+
+    const transferHoldershipTxn = await lovePoemV2
+      .connect(originalHolder)
+      .transferHoldership(
+        newHolder.address,
+        donor.address,
+        tokenId,
+        1000000,
+        false,
+      );
+    const transferHoldershipTxnReceipt = await transferHoldershipTxn.wait();
+    const currentHolder = transferHoldershipTxnReceipt?.events?.find(
+      (e) => e?.event === "HoldershipTransferred",
+    )?.args?.newHolder;
+    const currentHolderBalance = await lovePoemV2.balanceOf(currentHolder);
+    console.log(
+      "Current holder: ",
+      currentHolder,
+      currentHolderBalance.toString(),
+    );
+    expect(currentHolder).to.equal(newHolder.address);
   });
 });
