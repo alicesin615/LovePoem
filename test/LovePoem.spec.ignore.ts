@@ -7,7 +7,7 @@ import {
   VRFCoordinatorV2Mock__factory,
   VRFv2Consumer,
   VRFv2Consumer__factory,
-} from "../typechain-types";
+} from "../typechain";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { developmentChains } from "../helper-hardhat-config";
 import { ContractReceipt } from "ethers";

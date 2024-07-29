@@ -5,6 +5,14 @@ pragma solidity ^0.8.19;
  * @custom:deprecated
  * */
 library LovePoemLib {
+	uint256 constant ResaleDonationRatio = 50;
+
+	enum RequestPurpose {
+		UNLOCK_EXCLUSIVE_EXCESS,
+		IN_CONCONERT_SURPRISE,
+		UPDATE_STATUS
+	}
+
 	enum PhotoCard {
 		UNLUCKY,
 		BLUEMING,

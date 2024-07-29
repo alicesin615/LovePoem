@@ -1,9 +1,12 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.22;
+pragma solidity ^0.8.23;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/interfaces/IERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
+
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "./LovePoemLib.sol";
 
@@ -19,6 +22,7 @@ contract LovePoemV2 is ERC721URIStorage, Ownable {
 	uint256 private tokenIdCounter;
 
 	mapping(uint256 => address) public tokenHolders; // mapping(tokenId => holderAddress)
+	mapping(address => uint256) public balances; // mapping(holder => balance)
 
 	event HoldershipTransferred(uint256 tokenId, address oldHolder, address newHolder);
 	event PoemMinted(uint256 indexed tokenId, address owner);
@@ -26,6 +30,7 @@ contract LovePoemV2 is ERC721URIStorage, Ownable {
 
 	error InvalidHolder(uint256 tokenId, address requester);
 	error InvalidTokenId(uint256 tokenId);
+	error HolderAlreadyExists();
 	error FailedToDonate(address donor, uint256 donationAmount);
 
 	constructor(
@@ -71,7 +76,7 @@ contract LovePoemV2 is ERC721URIStorage, Ownable {
 	function tokenURI(uint256 tokenId) public view virtual override validToken(tokenId) returns (string memory) {
 		string memory baseURIString = _baseURI();
 
-		if (bytes(baseURIString).length == 0 || tokenHolders[tokenId] != msg.sender) {
+		if (bytes(baseURIString).length == 0) {
 			return "";
 		}
 
@@ -91,16 +96,7 @@ contract LovePoemV2 is ERC721URIStorage, Ownable {
 		);
 
 		// Return the baseURI with a query string, which looks up the token id in a row.
-		return
-			string(
-				abi.encodePacked(
-					baseURIString,
-					"unwrap=true&extract=true",
-					query,
-					Strings.toString(tokenId),
-					"%20group%20by%20id"
-				)
-			);
+		return string(abi.encodePacked(baseURIString, query, Strings.toString(tokenId), "%20group%20by%20id"));
 	}
 
 	/**
@@ -108,9 +104,14 @@ contract LovePoemV2 is ERC721URIStorage, Ownable {
 	 */
 	function mint() public {
 		require(tokenIdCounter < maxSupply, "Maximum number of tokens have been minted");
+		isNotExistingHolder(msg.sender);
+
 		_safeMint(msg.sender, tokenIdCounter);
-		emit PoemMinted(tokenIdCounter, msg.sender);
+		tokenHolders[tokenIdCounter] = msg.sender;
+		balances[msg.sender] += 1;
 		setTokenURI(tokenIdCounter);
+
+		emit PoemMinted(tokenIdCounter, msg.sender);
 		tokenIdCounter++;
 	}
 
@@ -129,10 +130,23 @@ contract LovePoemV2 is ERC721URIStorage, Ownable {
 		return _ownerOf(tokenId) == msg.sender;
 	}
 
+	function balanceOf(address holder) public view virtual override(IERC721, ERC721) returns (uint256) {
+		require(holder != address(0), "Invalid receipient address");
+		return balances[holder];
+	}
+
+	function isNotExistingHolder(address holder) internal view returns (bool) {
+		if (balanceOf(holder) > 0) {
+			revert HolderAlreadyExists();
+		} else {
+			return true;
+		}
+	}
+
 	/**
 	 * @notice Transfer nft to new address if the caller is the token holder.
 	 * if isResale, % of the newly updated price of token will be donated
-	 * Assumes that the newHolder has already made the payment.
+	 * Assumes that the newHolder has already made the payment to original holder
 	 *
 	 * @param currPrice required for validating the donation
 	 **/
@@ -144,21 +158,33 @@ contract LovePoemV2 is ERC721URIStorage, Ownable {
 		bool isResale
 	) external payable onlyHolder(tokenId) {
 		require(newHolder != address(0) && newHolder != msg.sender, "Invalid receipient address");
-		safeTransferFrom(msg.sender, newHolder, tokenId);
+		balances[msg.sender] -= 1;
+		balances[newHolder] += 1;
 		tokenHolders[tokenId] = newHolder;
+		safeTransferFrom(msg.sender, newHolder, tokenId);
+
+		emit HoldershipTransferred(tokenId, msg.sender, newHolder);
 
 		if (isResale) {
-			require(msg.value == (currPrice / LovePoemLib.ResaleDonationRatio), "Invalid donation amount");
-			(bool success, ) = payable(donationAddress).call{value: msg.value}("");
+			require(msg.value >= ((currPrice * LovePoemLib.ResaleDonationRatio) / 100), "Insufficient donation amount");
+			(bool success, ) = donationAddress.call{value: msg.value}("");
 			if (!success) {
 				revert FailedToDonate(msg.sender, msg.value);
+			} else {
+				emit SuccessfullyDonated(msg.sender, msg.value);
 			}
-			emit SuccessfullyDonated(msg.sender, msg.value);
 		}
-		emit HoldershipTransferred(tokenId, msg.sender, newHolder);
 	}
 
 	function totalSupply() public pure returns (uint256) {
 		return maxSupply;
+	}
+
+	function _burn(uint256 tokenId) internal override(ERC721URIStorage) {
+		super._burn(tokenId);
+	}
+
+	function supportsInterface(bytes4 interfaceId) public view override returns (bool) {
+		return super.supportsInterface(interfaceId);
 	}
 }
