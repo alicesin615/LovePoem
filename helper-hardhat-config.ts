@@ -9,7 +9,7 @@ const localTablelandBaseURI = baseURIs?.[
  * @description Remove `/tables/${chainId} from baseURI to get general base URI
  */
 const formatBaseURI = (baseURI: string) => {
-  return baseURI?.replace(/\/tables\/\d+\/$/, "");
+  return baseURI?.replace(/tables\/\d+\/$/, "");
 };
 
 export const networkConfig: NetworkConfigMap = {

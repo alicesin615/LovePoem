@@ -1,5 +1,3 @@
-import { BigNumber } from "ethers";
-
 type CommonLocalConfig = {
   baseFee?: string;
   gasPriceLink?: string;
