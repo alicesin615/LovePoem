@@ -11,7 +11,11 @@ import "@nomiclabs/hardhat-ethers";
 import "@tableland/hardhat";
 import "@tableland/evm";
 import "@tableland/sdk";
-import { TASK_COMPILE_SOLIDITY_GET_SOURCE_PATHS } from "hardhat/builtin-tasks/task-names";
+import {
+  TASK_COMPILE_SOLIDITY_GET_SOURCE_PATHS,
+  TASK_TEST,
+  TASK_TEST_RUN_MOCHA_TESTS,
+} from "hardhat/builtin-tasks/task-names";
 
 dotenv.config();
 
@@ -22,7 +26,7 @@ const POLYGONSCAN_API_KEY = process.env.POLYGONSCAN_API_KEY;
 const ALCHEMY_POLYGON_AMOY_API_KEY = process.env.ALCHEMY_POLYGON_AMOY_API_KEY;
 
 // exclude **.ignore.sol from compilation
-subtask(TASK_COMPILE_SOLIDITY_GET_SOURCE_PATHS).setAction(
+subtask(TASK_COMPILE_SOLIDITY_GET_SOURCE_PATHS || TASK_TEST).setAction(
   async (_, __, runSuper) => {
     const paths = await runSuper();
     return paths.filter((p: any) => !p.includes("ignore"));
@@ -32,6 +36,9 @@ subtask(TASK_COMPILE_SOLIDITY_GET_SOURCE_PATHS).setAction(
 const config: HardhatUserConfig = {
   solidity: {
     compilers: [
+      {
+        version: "0.8.23",
+      },
       {
         version: "0.8.22",
       },
