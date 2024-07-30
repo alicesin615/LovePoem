@@ -57,9 +57,7 @@ contract VRFSubscriptionConsumer is VRFConsumerBaseV2Plus {
 				requestConfirmations: s_requestConfirmations,
 				callbackGasLimit: s_callbackGasLimit,
 				numWords: s_numWords,
-				extraArgs: VRFV2PlusClient._argsToBytes(
-					VRFV2PlusClient.ExtraArgsV1({nativePayment: enableNativePayment})
-				)
+				extraArgs: VRFV2PlusClient._argsToBytes(VRFV2PlusClient.ExtraArgsV1({nativePayment: enableNativePayment}))
 			})
 		);
 		s_requests[requestId] = RequestStatus({
@@ -83,11 +81,7 @@ contract VRFSubscriptionConsumer is VRFConsumerBaseV2Plus {
 
 	function getRequestStatus(
 		uint256 _requestId
-	)
-		external
-		view
-		returns (bool fulfilled, uint256[] memory randomWords, LovePoemLib.RequestPurpose requestPurpose)
-	{
+	) external view returns (bool fulfilled, uint256[] memory randomWords, LovePoemLib.RequestPurpose requestPurpose) {
 		require(s_requests[_requestId].exists, "request not found");
 		RequestStatus memory request = s_requests[_requestId];
 		return (request.fulfilled, request.randomWords, request.requestPurpose);
