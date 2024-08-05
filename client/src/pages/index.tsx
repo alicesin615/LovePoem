@@ -1,10 +1,8 @@
 import React from "react";
-import type { ReactElement } from "react";
 import Image from "next/image";
 import styles from "@pages/index.module.css";
-import type { NextPageWithLayout } from "./_app";
 
-const Home: NextPageWithLayout = () => {
+const Home = () => {
   return (
     <main className={styles.main}>
       <div className={styles.description}>
@@ -90,10 +88,6 @@ const Home: NextPageWithLayout = () => {
       </div>
     </main>
   );
-};
-
-Home.getLayout = function getLayout(homepage: ReactElement) {
-  return homepage;
 };
 
 export default Home;
