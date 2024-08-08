@@ -26,17 +26,22 @@
       "@styles/*": ["styles/*"],
       "@hooks/*": ["hooks/*"],
       "@pages/*": ["pages/*"],
-      "@components/*": ["components/*"]
+      "@components/*": ["components/*"],
+      "@pageComponents/*": ["pageComponents/*"],
+      "@customTypes/*": ["types/*"],
+      "@utils/*": ["utils/*"]
     }
   },
   "include": [
     "./src/**/*",
     "./src/pages/*.tsx",
+    "./src/**/*.module.css",
     "next.config.mjs",
     ".next/types/**/*.{ts,tsx}",
     "node_modules/@types/**/*.d.ts",
     ".next/types/**/*.ts",
     "./tailwind.config.js"
   ],
-  "exclude": ["node_modules"]
+  "files": ["./globals.d.ts"],
+  "exclude": ["./node_modules"]
 }

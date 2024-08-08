@@ -5,22 +5,14 @@ import {
   NavbarContent,
   NavbarItem,
   Link,
-  Button,
 } from "@nextui-org/react";
+import { WalletButton } from "@pageComponents/root";
 
-export default function MainNavbar() {
+export function MainNavbar() {
   return (
     <Navbar>
-      <NavbarBrand>
-        {/* <AcmeLogo /> */}
-        <p className="font-bold text-inherit">TokenMaster</p>
-      </NavbarBrand>
+      <NavbarBrand>TokenMaster</NavbarBrand>
       <NavbarContent className="hidden sm:flex gap-4" justify="center">
-        <NavbarItem>
-          <Link color="foreground" href="#">
-            Features
-          </Link>
-        </NavbarItem>
         <NavbarItem isActive>
           <Link href="#" aria-current="page">
             Customers
@@ -33,11 +25,7 @@ export default function MainNavbar() {
         </NavbarItem>
       </NavbarContent>
       <NavbarContent justify="end">
-        <NavbarItem>
-          <Button as={Link} color="primary" href="#">
-            Connect Wallet
-          </Button>
-        </NavbarItem>
+        <WalletButton />
       </NavbarContent>
     </Navbar>
   );

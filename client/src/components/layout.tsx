@@ -1,6 +1,5 @@
 import React from "react";
-import { Inter } from "next/font/google";
-const inter = Inter({ subsets: ["latin"] });
+import { MainNavbar } from "./navbar";
 
 export default function RootLayout({
   children,
@@ -8,8 +7,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className={`${inter.className} relative`}>{children}</body>
-    </html>
+    <>
+      <MainNavbar />
+      <main>{children}</main>
+    </>
   );
 }
